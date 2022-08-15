@@ -1,13 +1,20 @@
 const express = require('express')
+const fs = require('fs')
 
 const app = express()
 
-app.get('/',(req,res)=>{
-    res.send('get /todos')
-})
 
 app.get('/todos',(req,res)=>{
-    res.send('get /todos')
+    fs.readFile('./db.json','utf8',(err,data)=>{
+        if(err){
+           return res.status(500).json({
+                error:err.message
+            })
+        }
+        const db = JSON.parse(data)
+        res.status(200).json(db.todos)
+    })
+    // res.send('get /todos')
 })
 
 app.get('/todos/:id',(req,res)=>{
