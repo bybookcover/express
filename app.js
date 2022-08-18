@@ -1,6 +1,6 @@
 const express = require('express')
 const fs = require('fs')
-const { getDb } = require('./db')
+const { getDb, saveDb} = require('./db')
 
 const app = express()
 
@@ -48,23 +48,30 @@ app.get('/todos/:id', async (req, res) => {
 })
 
 app.post('/todos', async (req, res) => {
-    // 1.获取客户端请求体参数
-    const todo = req.body
-    // 2.数据验证
-    if(!todo.title){
-        return res.status(422).json({
-            error:'the field title is required'
+    try{
+        // 1.获取客户端请求体参数
+        const todo = req.body
+        // 2.数据验证
+        if(!todo.title){
+            return res.status(422).json({
+                error:'the field title is required'
+            })
+        }
+        // 3.数据验证通过，把数据存储到db中
+        const db = await getDb()
+
+        const lastTodo = db.todos[db.todos.length-1]
+        todo.id = lastTodo ? lastTodo.id+1 : 1 
+        db.todos.push(todo)
+        await saveDb(db)
+
+        // 4.发送响应
+        res.status(200).json(todo)
+    }catch(err){
+        res.status(500).json({
+            error:err.message
         })
     }
-    // 3.数据验证通过，把数据存储到db中
-    const db = await getDb()
-
-    const lastTodo = db.todos[db.todos.length-1]
-    db.todos.push({
-        id: lastTodo ? lastTodo.id+1 : 1 ,
-        title:todo.title
-    })
-    await saveDb(db)
 })
 
 app.patch('/todos/:id', (req, res) => {
